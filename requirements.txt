@@ -1,0 +1,4 @@
+torch>=2.0
+transformers>=4.30
+regex
+huggingface-hub

@@ -1,0 +1,296 @@
+# PII Shield - CLI Installation Guide
+
+This document provides detailed installation instructions for each supported CLI tool.
+
+## Prerequisites
+
+Before installing PII Shield for any CLI tool, ensure you have:
+
+- **Python 3.10 or higher**: `python3 --version`
+- **pipenv** (for virtual environment installation): `pip install pipenv` or `brew install pipenv`
+- At least **5GB free disk space** for ML models
+
+---
+
+## 1. Claude Code
+
+### Option A: Virtual Environment Installation (Recommended)
+
+```bash
+# Navigate to pii-shield directory
+cd /Users/lyuboslavlyubenov/pii-shield-pii-shield-venv
+
+# Install pipenv environment
+pipenv install
+
+# Run the installation script with --venv flag
+bash install.sh --venv --claude-code
+```
+
+### Option B: Classic Installation
+
+```bash
+cd /Users/lyuboslavlyubenov/pii-shield-pii-shield-venv
+bash install.sh --claude-code
+```
+
+### Configuration
+
+The installation script will:
+
+1. Copy hook to `~/.claude/hooks/pii_shield_claude.py`
+2. Create `~/.claude/settings.json` if it doesn't exist
+
+**Manual Configuration Required:**
+
+Add the following to `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "pii_shield": {
+      "script": "~/.claude/hooks/pii_shield_claude.py",
+      "events": ["PreToolUse", "UserPromptSubmit"]
+    }
+  }
+}
+```
+
+### Verifying Installation
+
+After configuration, restart Claude Code and test with:
+```
+User: This is a test with email test@example.com
+```
+
+PII Shield should block or mask the email address.
+
+---
+
+## 2. Codex CLI
+
+### Option A: Virtual Environment Installation (Recommended)
+
+```bash
+cd /Users/lyuboslavlyubenov/pii-shield-pii-shield-venv
+pipenv install
+bash install.sh --venv --codex
+```
+
+### Option B: Classic Installation
+
+```bash
+cd /Users/lyuboslavlyubenov/pii-shield-pii-shield-venv
+bash install.sh --codex
+```
+
+### Configuration
+
+The installation script will:
+
+1. Copy hook to `~/.codex/plugins/pii_shield_codex.py`
+2. Create/modify `~/.codex/hooks.json`
+
+**Manual Configuration Required:**
+
+Add the following hook to `~/.codex/hooks.json`:
+
+```json
+{
+  "hooks": [
+    {
+      "name": "pii_shield",
+      "path": "~/.codex/plugins/pii_shield_codex.py",
+      "events": ["PreToolUse", "UserPromptSubmit"]
+    }
+  ]
+}
+```
+
+### Verifying Installation
+
+Restart Codex CLI and test with:
+```
+codex --prompt "Find files with phone number 555-123-4567"
+```
+
+---
+
+## 3. OpenCode
+
+### Option A: Virtual Environment Installation (Recommended)
+
+```bash
+cd /Users/lyuboslavlyubenov/pii-shield-venv
+pipenv install
+bash install.sh --venv --opencode
+```
+
+### Option B: Classic Installation
+
+```bash
+cd /Users/lyuboslavlyubenov/pii-shield-pii-shield-venv
+bash install.sh --opencode
+```
+
+### Configuration
+
+The installation script will:
+
+1. Copy Python engine to `~/.opencode/scripts/pii_shield.py`
+2. Create JavaScript plugin at `~/.opencode/plugins/pii_shield_opencode.js`
+3. Include TypeScript source at `~/.opencode/plugins/opencode_hook.ts`
+
+**Manual Configuration Required:**
+
+The JavaScript wrapper automatically calls the Python engine. Ensure:
+- Node.js is installed: `node --version` (v16+)
+- Python3 is in PATH: `which python3`
+
+### Verifying Installation
+
+Restart OpenCode and test with:
+```
+// Try to read a file
+read /path/to/file/with/ssn-123-45-6789.txt
+```
+
+The tool execution should be blocked if SSN is detected.
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. "pipenv not found"
+```bash
+pip install pipenv
+# or on macOS
+brew install pipenv
+```
+
+#### 2. Python version too old
+```bash
+# Check version
+python3 --version
+
+# Install newer version (macOS with Homebrew)
+brew install python@3.12
+
+# Or download from python.org
+```
+
+#### 3. Hooks not activating
+
+**Claude Code:**
+```bash
+# Ensure execute permissions
+chmod +x ~/.claude/hooks/pii_shield_claude.py
+
+# Check settings.json syntax
+cat ~/.claude/settings.json | jq .
+```
+
+**Codex CLI:**
+```bash
+# Verify hook file exists
+ls -la ~/.codex/plugins/pii_shield_codex.py
+
+# Check hooks.json configuration
+cat ~/.codex/hooks.json
+```
+
+**OpenCode:**
+```bash
+# Verify all files installed
+ls -la ~/.opencode/scripts/pii_shield.py
+ls -la ~/.opencode/plugins/pii_shield_opencode.js
+```
+
+#### 4. Dependencies fail to install
+```bash
+# For pipenv method
+cd /path/to/pii-shield
+pipenv --rm  # Remove existing environment
+pipenv install
+
+# For classic method
+pip3 install -r requirements.txt
+```
+
+#### 5. Permission denied errors
+```bash
+# Ensure wrapper scripts are executable
+chmod +x hooks/*_wrapper.sh
+```
+
+### Model Download Issues
+
+First run will download ML models (~500MB-2GB):
+
+- `dslim/bert-base-NER` (for NER detection)
+- May prompt for HuggingFace token - accept default (anonymous access)
+
+If download fails:
+```bash
+# Clear cache
+rm -rf ~/.cache/huggingface
+
+# Retry - will re-download
+pipenv run python3 pii_shield.py --help
+```
+
+---
+
+## Uninstallation
+
+### Claude Code
+```bash
+rm ~/.claude/hooks/pii_shield_claude.py
+# Remove pii_shield entry from ~/.claude/settings.json
+```
+
+### Codex CLI
+```bash
+rm ~/.codex/plugins/pii_shield_codex.py
+# Remove hook from ~/.codex/hooks.json
+```
+
+### OpenCode
+```bash
+rm ~/.opencode/scripts/pii_shield.py
+rm ~/.opencode/plugins/pii_shield_opencode.js
+rm ~/.opencode/plugins/opencode_hook.ts
+```
+
+---
+
+## Advanced: Direct Usage
+
+### Run PII Scanner Directly
+
+```bash
+cd /Users/lyuboslavlyubenov/pii-shield-pii-shield-venv
+
+# Virtual environment
+pipenv run python3 pii_shield.py --scan "test@example.com"
+
+# Classic
+python3 pii_shield.py --scan "test@example.com"
+```
+
+### Test Only (No Blocking)
+
+```bash
+pipenv run python3 pii_shield.py --test
+```
+
+---
+
+## Support
+
+For issues or questions:
+- Check logs in `~/.claude/`, `~/.codex/`, or `~/.opencode/`
+- Review `llm.txt` in your pii-shield directory
+- Ensure all prerequisites are met before installing
